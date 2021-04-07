@@ -18,7 +18,9 @@ CMakeFiles/Project1.dir/Order.cpp.o: ../Commodity.h
 CMakeFiles/Project1.dir/Order.cpp.o: ../Order.cpp
 CMakeFiles/Project1.dir/Order.cpp.o: ../Order.h
 
+CMakeFiles/Project1.dir/User.cpp.o: ../Admin.h
 CMakeFiles/Project1.dir/User.cpp.o: ../Commodity.h
+CMakeFiles/Project1.dir/User.cpp.o: ../Manager.h
 CMakeFiles/Project1.dir/User.cpp.o: ../Order.h
 CMakeFiles/Project1.dir/User.cpp.o: ../User.cpp
 CMakeFiles/Project1.dir/User.cpp.o: ../User.h

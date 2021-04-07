@@ -7,13 +7,11 @@
 #include <ctime>
 #include <iomanip>
 #include <unistd.h>
-#include <termios.h>
 #define PAUSE printf("Press Enter key to continue...\n"); fgetc(stdin);
 
 using namespace std;
 
 Manager::Manager() {
-
 }
 
 void Manager::adminLogin() {
@@ -91,13 +89,15 @@ void Manager::buyerAction(User *user) {
                 PAUSE
                 break;
             case 2:
-                this->purchase(user);
+                user->purchase();
+                if(user->isFrozen)
+                    return;
                 break;
             case 3:
                 this->searchCommodity();
                 break;
             case 4:
-                this->showBuyerOrders(user);
+                user->showBuyerOrders();
                 break;
             case 5:
                 this->query();
@@ -160,8 +160,8 @@ bool Manager::checkRegisterUsername(string username) {
 
 bool Manager::checkUsername(string username) {
     bool flag = true;
-    for (int i = 0; i < this->users.size(); i++)
-        if (username == this->users[i]->getUsername()) {
+    for (int i = 0; i < users.size(); i++)
+        if (username == users[i]->getUsername()) {
             flag = false;
             break;
         }
@@ -176,8 +176,8 @@ void Manager::delUser() {
     int index = 0;
     cin >> UID;
     getchar();
-    for (int i = 0; i < this->users.size(); i++)
-        if (this->users[i]->getID() == UID) {
+    for (int i = 0; i < users.size(); i++)
+        if (users[i]->getID() == UID) {
             index = i;
             flag = true;
             break;
@@ -191,7 +191,7 @@ void Manager::delUser() {
     cin >> choice;
     getchar();
     if (choice == 'y') {
-        User* user = this->users[index];
+        User* user = users[index];
         vector<Commodity*> com = user->getCommodities();
         for (int i = 0; i < com.size(); i++)
             if (com[i]->getBelonging() == 0) {
@@ -199,7 +199,7 @@ void Manager::delUser() {
                 c->setStatus(-1);
                 com[i]->setStatus(-1);
             }
-        this->users.erase(this->users.begin() + index);
+        users.erase(users.begin() + index);
         cout << "*********删除成功*********" << endl;
     }
     else
@@ -212,11 +212,49 @@ void Manager::exitSystem() {
     exit(0);
 }
 
+void Manager::findPass() {
+    cout<<"请输入您要找回密码的账号（UID或者用户名均可）：";
+    string s;
+    cin>>s;
+    getchar();
+    User *user = nullptr;
+    for(User* u : users)
+        if(u->getID() == s || u->getUsername() == s) {
+            user = u;
+            break;
+        }
+    if(!user) {
+        cout<<"!!!帐号不存在!!!\n";
+        PAUSE
+        return;
+    }
+    user->findPassword();
+}
+
+void Manager::findPayPass() {
+    cout<<"请输入您要找回支付密码的账号（UID或者用户名均可）：";
+    string s;
+    cin>>s;
+    getchar();
+    User *user = nullptr;
+    for(User* u : users)
+        if(u->getID() == s || u->getUsername() == s) {
+            user = u;
+            break;
+        }
+    if(!user) {
+        cout<<"!!!帐号不存在!!!\n";
+        PAUSE
+        return;
+    }
+    user->findPayPassword();
+}
+
 Commodity* Manager::getCommodity(string MID) {
     Commodity* c = NULL;
-    for (int i = 0; i < this->commodities.size(); i++) {
-        if (this->commodities[i]->getMID() == MID) {
-            c = this->commodities[i];
+    for (int i = 0; i < commodities.size(); i++) {
+        if (commodities[i]->getMID() == MID) {
+            c = commodities[i];
             break;
         }
     }
@@ -224,7 +262,9 @@ Commodity* Manager::getCommodity(string MID) {
 }
 
 string Manager::getMID() {
-    string s = this->commodities[this->commodities.size() - 1]->getMID();
+    if(commodities.empty())
+        return "M00001";
+    string s = commodities[commodities.size() - 1]->getMID();
     char _s[6];
     for (int i = 1; i < 6; i++)
         _s[i - 1] = s[i];
@@ -244,7 +284,9 @@ string Manager::getMID() {
 }
 
 string Manager::getTID() {
-    string s = this->orders[this->orders.size() - 1]->getTID();
+    if(orders.empty())
+        return "T00001";
+    string s = orders[orders.size() - 1]->getTID();
     char _s[6];
     for (int i = 1; i < 6; i++)
         _s[i - 1] = s[i];
@@ -264,7 +306,9 @@ string Manager::getTID() {
 }
 
 string Manager::getUID() {
-    string s = this->users[this->users.size() - 1]->getID();
+    if(users.empty())
+        return "U00001";
+    string s = users[users.size() - 1]->getID();
     char _s[6];
     for (int i = 1; i < 6; i++)
         _s[i - 1] = s[i];
@@ -285,32 +329,33 @@ string Manager::getUID() {
 
 User* Manager::getVendor(string UID) {
     User* u = NULL;
-    for(int i = 0; i < this->users.size(); i++)
-        if (this->users[i]->getID() == UID) {
-            u = this->users[i];
+    for(int i = 0; i < users.size(); i++)
+        if (users[i]->getID() == UID) {
+            u = users[i];
             break;
         }
     return u;
 }
 
 void Manager::init() {
-    this->admins.clear();
-    this->commodities.clear();
-    this->orders.clear();
-    this->users.clear();
+    admins.clear();
+    commodities.clear();
+    orders.clear();
+    users.clear();
     ifstream ifs("User.txt", ios::in);
     string name, password, UID, contact, address, payPass;
     int sex;
     double balance;
-    while (ifs >> UID >> name >> password >> sex >> contact >> address >> balance >> payPass) {
-        User* user = new User(UID, name, password, sex, contact, address, balance, payPass);
-        this->users.push_back(user);
+    bool isFrozen;
+    while (ifs >> UID >> name >> password >> sex >> contact >> address >> balance >> payPass >> isFrozen) {
+        User* user = new User(UID, name, password, sex, contact, address, balance, payPass, isFrozen);
+        users.push_back(user);
     }
     ifs.close();
     ifs.open("Admins.txt", ios::in);
     while (ifs >> name >> password) {
         Admin* admin = new Admin(name, password);
-        this->admins.push_back(admin);
+        admins.push_back(admin);
     }
     ifs.close();
     ifs.open("Commodities.txt", ios::in);
@@ -323,7 +368,7 @@ void Manager::init() {
     int status1;
     while (ifs >> MID1 >> name1 >> introduction1 >> price1 >> ownerID1 >> date1 >> status1) {
         Commodity* c = new Commodity(MID1, name1, introduction1, price1, ownerID1, date1, status1, -1);
-        this->commodities.push_back(c);
+        commodities.push_back(c);
     }
     ifs.close();
     ifs.open("Orders.txt", ios::in);
@@ -331,8 +376,8 @@ void Manager::init() {
     double price2;
     while (ifs >> TID2 >> MID2 >> price2 >> date2 >> vendorUID2 >> buyerUID2) {
         Order* o;
-        Commodity* c = NULL;
-        for (int i = 0; i < this->commodities.size(); i++) {
+        Commodity* c = nullptr;
+        for (int i = 0; i < commodities.size(); i++) {
             if (MID2 == commodities[i]->getMID()) {
                 c = commodities[i];
                 break;
@@ -340,7 +385,7 @@ void Manager::init() {
 
         }
         o = new Order(c, TID2, date2, vendorUID2, buyerUID2, -1);
-        this->orders.push_back(o);
+        orders.push_back(o);
 
     }
 }
@@ -357,14 +402,14 @@ void Manager::IM(User* user) {
             case 1:
                 return;
             case 2:
-                this->modifyInfo(user);
+                user->modifyInfo();
                 break;
             case 3:
                 user->showInfo();
                 PAUSE
                 break;
             case 4:
-                this->recharge(user);
+                user->recharge();
                 PAUSE
                 break;
             default:
@@ -374,307 +419,6 @@ void Manager::IM(User* user) {
         }
     }
 
-}
-
-void Manager::modifyCommodity(User* user) {
-    user->showPutUp();
-    string MID;
-    cout << "*********************************************************************************************" << endl;
-    cout << "请输入修改商品ID：";
-    cin >> MID;
-    getchar();
-    Commodity* c = this->getCommodity(MID);
-    Commodity* c1 = user->getCommodity(MID);
-    if (!c) {
-        cout << "您输入的商品ID不存在\n";
-        PAUSE
-        return;
-    }
-    if (c1->getBelonging() == 1) {
-        cout << "对不起，这件商品不属于您，您没有修改权限\n";
-        PAUSE
-        return;
-    }
-    cout << "请输入修改商品属性（1.名称 2.价格 3.描述）：";
-    string s;
-    double price = 0;
-    int choice = 0;
-    cin >> choice;
-    getchar();
-    if (choice == 1) {
-        cout << "请输入修改后的商品名称：";
-        cin >> s;
-        getchar();
-        cout << "\n请确认修改信息无误\n";
-        cout << "****************************************\n";
-        cout << "商品ID：" << c->getMID() << endl;
-        cout << "商品名称：" << s << endl;
-        printf("商品价格：%.1lf\n", c->getPrice());
-        cout << "商品描述：" << c->getIntroduction() << endl;
-        cout << "****************************************\n";
-        char option;
-        cout << "确认修改?(y/n)\n";
-        cin >> option;
-        getchar();
-        if (option == 'y') {
-            c->setName(s);
-            c1->setName(s);
-            cout << "修改成功！\n";
-            cout << "*********************************************************************************************" << endl;
-        }
-        else {
-            cout << "取消修改\n";
-        }
-    }
-    else if (choice == 2) {
-        cout << "请输入修改后的商品价格：";
-        cin >> price;
-        getchar();
-        cout << "\n请确认修改信息无误\n";
-        cout << "****************************************\n";
-        cout << "商品ID：" << c->getMID() << endl;
-        cout << "商品名称：" << c->getName() << endl;
-        printf("商品价格：%.1lf\n", price);
-        cout << "商品描述：" << c->getIntroduction() << endl;
-        cout << "****************************************\n";
-        char option;
-        cout << "确认修改?(y/n)\n";
-        cin >> option;
-        getchar();
-        if (option == 'y') {
-            c1->setPrice(price);
-            c->setPrice(price);
-            cout << "修改成功！\n";
-            cout << "*********************************************************************************************" << endl;
-        }
-        else {
-            cout << "取消修改\n";
-        }
-    }
-    else if (choice == 3) {
-        cout << "请输入修改后的商品描述：";
-        cin >> s;
-        getchar();
-        cout << "\n请确认修改信息无误\n";
-        cout << "****************************************\n";
-        cout << "商品ID：" << c->getMID() << endl;
-        cout << "商品名称：" << c->getName() << endl;
-        printf("商品价格：%.1lf\n", c->getPrice());
-        cout << "商品描述：" << s << endl;
-        cout << "****************************************\n";
-        char option;
-        cout << "确认修改?(y/n)\n";
-        cin >> option;
-        getchar();
-        if (option == 'y') {
-            c1->setIntro(s);
-            c->setIntro(s);
-            cout << "修改成功！\n";
-            cout << "*********************************************************************************************" << endl;
-        }
-        else {
-            cout << "取消修改\n";
-        }
-    }
-    else {
-        cout << "属性不存在，修改失败\n";
-        cout << "*********************************************************************************************" << endl;
-    }
-    PAUSE
-    return;
-}
-
-void Manager::modifyInfo(User* user) {
-    user->showInfo();
-    cout << "请选择你要修改的属性(1.用户名 2.联系方式 3.地址 4.支付密码 5.登录密码)：";
-    string s;
-    int choice;
-    bool flag = true;
-    char option;
-    cin >> choice;
-    getchar();
-    switch (choice)
-    {
-        case 1:
-            cout << "请输入修改后的用户名：";
-            cin >> s;
-            getchar();
-            for (int i = 0; i < this->users.size(); i++)
-                if (this->users[i]->getID() != user->getID() && s == this->users[i]->getUsername()) {
-                    flag = false;
-                    break;
-                }
-            if (!flag) {
-                cout << "用户名重复\n";
-                PAUSE
-                return;
-            }
-            cout << "是否修改？（y/n）\n";
-            cin >> option;
-            getchar();
-            if (option == 'y') {
-                user->setUsername(s);
-                cout << "修改成功\n";
-                PAUSE
-                return;
-            }
-            else {
-                cout << "取消修改\n";
-                PAUSE
-                return;
-            }
-            break;
-        case 2:
-            cout << "请输入修改后的联系方式：";
-            cin >> s;
-            getchar();
-            cout << "是否修改？（y/n）\n";
-            cin >> option;
-            getchar();
-            if (option == 'y') {
-                user->setContact(s);
-                cout << "修改成功\n";
-                PAUSE
-                return;
-            }
-            else {
-                cout << "取消修改\n";
-                PAUSE
-                return;
-            }
-            break;
-        case 3:
-            cout << "请输入修改后的地址：";
-            cin >> s;
-            getchar();
-            cout << "是否修改？（y/n）\n";
-            cin >> option;
-            getchar();
-            if (option == 'y') {
-                user->setAddress(s);
-                cout << "修改成功\n";
-                PAUSE
-                return;
-            }
-            else {
-                cout << "取消修改\n";
-                PAUSE
-                return;
-            }
-            break;
-        case 4:
-            cout << "请输入修改后的支付密码：";
-            cin >> s;
-            getchar();
-            cout << "是否修改？（y/n）\n";
-            cin >> option;
-            getchar();
-            if (option == 'y') {
-                user->setPayPass(s);
-                cout << "修改成功\n";
-                PAUSE
-                return;
-            }
-            else {
-                cout << "取消修改\n";
-                PAUSE
-                return;
-            }
-            break;
-        case 5:
-            cout << "请输入修改后的密码：";
-            cin >> s;
-            getchar();
-            cout << "是否修改？（y/n）\n";
-            cin >> option;
-            getchar();
-            if (option == 'y') {
-                user->setPassword(s);
-                cout << "修改成功\n";
-                PAUSE
-                return;
-            }
-            else {
-                cout << "取消修改\n";
-                PAUSE
-                return;
-            }
-            break;
-        default:
-            cout << "请输入正确的操作序号" << endl;
-            PAUSE
-            break;
-    }
-}
-
-void Manager::purchase(User *user) {
-    this->showCommodities();
-    cout << "输入您想购买的物品ID：";
-    string id;
-    cin >> id;
-    getchar();
-    Commodity* c2 = this->getCommodity(id);
-    if (!c2) {
-        cout << "您所输入的ID有误，商品不存在" << endl;
-        PAUSE
-        return;
-    }
-    if (c2->getOwnerID() == user->getID()) {
-        cout << "对不起，您不可以购买自己的商品哦" << endl;
-        PAUSE
-        return;
-    }
-    int flag = this->queryInfo(id);
-    if (flag == -1) {
-        PAUSE
-        return;
-    }
-    else if (flag == 0) {
-        cout << "对不起，该商品已经售出" << endl;
-        PAUSE
-        return;
-    }
-    else if (flag == 2) {
-        PAUSE
-        return;
-    }
-    printf("您的现有余额为：%.1lf\n", user->getBalance());
-    cout << "*****************************************************************************" << endl;
-    char choice;
-    cout << "您确定要购买此商品吗?(y/n)" << endl;
-    cin >> choice;
-    getchar();
-    if (choice == 'y') {
-        if (user->getBalance() - c2->getPrice() < 0) {
-            cout << "对不起，您的余额不足" << endl;
-            return;
-        }
-        else
-        {
-            User *vendor = this->getVendor(c2->getOwnerID());
-            time_t now = time(0);
-            tm* ltm = localtime(&now);
-            cout << "购买成功\n您的余额为：\t";
-            c2->setStatus(0);
-            user->setBalance(user->getBalance() - c2->getPrice());
-            vendor->setBalance(vendor->getBalance() + c2->getPrice());
-            printf("%.1lf\n", user->getBalance());
-            string date = to_string(1900 + ltm->tm_year) + "-" + ((1 + ltm->tm_mon) >= 10 ? to_string(1 + ltm->tm_mon) : "0" + to_string(1 + ltm->tm_mon)) + "-" + to_string(ltm->tm_mday);
-            cout << "交易时间：\t" <<date<< endl;
-            cout << "*****************************************************************************" << endl;
-            string TID = this->getTID();
-            Order* o1 = new Order(c2, TID, date, c2->getOwnerID(), user->getID(), 0);
-            Order* o2 = new Order(c2, TID, date, c2->getOwnerID(), user->getID(), -1);
-            user->pushOrder(o1);
-            this->orders.push_back(o2);
-            PAUSE
-
-        }
-    }
-    else if (choice == 'n') {
-        cout << "取消成功" << endl;
-        PAUSE
-    }
 }
 
 void Manager::putDown(User* user) {
@@ -773,26 +517,26 @@ int Manager::queryInfo(string MID) {
     int flag = 2;//0表示已经售出 1表示仍然有货 -1表示下架
     Commodity *c;
     cout << "*****************************************************************************" << endl;
-    for (int i = 0; i < this->commodities.size(); i++) {
-        if (MID == this->commodities[i]->getMID()) {
+    for (int i = 0; i < commodities.size(); i++) {
+        if (MID == commodities[i]->getMID()) {
 
-            c = this->commodities[i];
-            if (this->commodities[i]->getStatus() == -1) {
+            c = commodities[i];
+            if (commodities[i]->getStatus() == -1) {
                 cout << "对不起，商品已下架O^O" << endl;
                 return -1;
             }
-            cout << "名称：\t\t" << this->commodities[i]->getMID() << endl;
-            cout << "描述：\t\t" << this->commodities[i]->getIntroduction() << endl;
-            printf("价格：\t\t%.1lf\n", this->commodities[i]->getPrice());
-            cout << "上架时间：\t" << this->commodities[i]->getDate() << endl;
-            cout << "卖家ID：\t" << this->commodities[i]->getOwnerID() << endl;
+            cout << "名称：\t\t" << commodities[i]->getMID() << endl;
+            cout << "描述：\t\t" << commodities[i]->getIntroduction() << endl;
+            printf("价格：\t\t%.1lf\n", commodities[i]->getPrice());
+            cout << "上架时间：\t" << commodities[i]->getDate() << endl;
+            cout << "卖家ID：\t" << commodities[i]->getOwnerID() << endl;
             cout << "商品状态：\t";
-            if (this->commodities[i]->getStatus() == 1) {
+            if (commodities[i]->getStatus() == 1) {
                 flag = 1;
                 cout << "销售中" << endl;
             }
 
-            else if (this->commodities[i]->getStatus() == 0) {
+            else if (commodities[i]->getStatus() == 0) {
                 flag = 0;
                 cout << "已售出" << endl;
             }
@@ -808,18 +552,6 @@ int Manager::queryInfo(string MID) {
     return flag;
 }
 
-void Manager::recharge(User *user) {
-    cout << "您的当前余额为：" << user->getBalance() << endl;
-    cout << "请输入充值数目：";
-    double money;
-    cin >> money;
-    getchar();
-    cout << "************************************************************\n";
-    user->setBalance(money + user->getBalance());
-    cout << "充值成功\n";
-    printf("当前余额：%.1lf\n", user->getBalance());
-}
-
 void Manager::searchCommodity() {
     string key;
     cout << "输入关键字：";
@@ -827,21 +559,21 @@ void Manager::searchCommodity() {
     getchar();
     cout << "*******************************************************************************\n";
     int num = 0;
-    for (int i = 0; i < this->commodities.size(); i++) {
-        if (this->commodities[i]->getName().find(key) != -1) {
+    for (int i = 0; i < commodities.size(); i++) {
+        if (commodities[i]->getName().find(key) != -1) {
             num++;
             if (num == 1) {
                 cout << "ID\t\t名称\t\t\t价格\t\t状态\n";
             }
-            cout << this->commodities[i]->getMID() << "\t\t" << left << setw(24) << this->commodities[i]->getName()
-                 << "\t" << this->commodities[i]->getPrice() << "\t\t";
-            if (this->commodities[i]->getStatus() == -1) {
+            cout << commodities[i]->getMID() << "\t\t" << left << setw(24) << commodities[i]->getName()
+                 << "\t" << commodities[i]->getPrice() << "\t\t";
+            if (commodities[i]->getStatus() == -1) {
                 cout << "已下架\n";
             }
-            else if (this->commodities[i]->getStatus() == 1) {
+            else if (commodities[i]->getStatus() == 1) {
                 cout << "销售中\n";
             }
-            else if (this->commodities[i]->getStatus() == 0) {
+            else if (commodities[i]->getStatus() == 0) {
                 cout << "已出售\n";
             }
         }
@@ -853,36 +585,19 @@ void Manager::searchCommodity() {
     PAUSE
 }
 
-void Manager::showBuyerOrders(User* user) {
-    cout << "*************************************************************************************" << endl;
-    cout << "订单ID:\t\t商品ID：\t交易时间：\t交易金额：\t卖家ID：\t买家ID：\n";
-    for (int i = 0; i < user->getOrders().size(); i++) {
-        if (!user->getOrders()[i]->getStatus()) {
-            cout << user->getOrders()[i]->getTID() << "\t\t"
-                 << user->getOrders()[i]->getCommodity()->getMID() << "\t\t"
-                 << user->getOrders()[i]->getDate() << "\t";
-            printf("%.1lf\t\t", user->getOrders()[i]->getCommodity()->getPrice());
-            cout << user->getOrders()[i]->getVendorID() << "\t\t"
-                 << user->getOrders()[i]->getBuyerID() << endl;
-        }
-    }
-    cout << "*************************************************************************************" << endl;
-    PAUSE
-}
-
 void Manager::showCommodities() {
     cout << "***********************************************************************************************************************" << endl;
     cout << "ID\t\t名称\t\t\t\t价格\t\t上架时间\t\t卖家ID\t\t商品状态" << endl;
-    for (int i = 0; i < this->commodities.size(); i++) {
-        cout << this->commodities[i]->getMID() << "\t\t"
-             << left << setw(24) << this->commodities[i]->getName() << "\t\t";
-        printf("%.1lf\t\t", this->commodities[i]->getPrice());
-        cout << this->commodities[i]->getDate() << "\t\t" << this->commodities[i]->getOwnerID();
-        if (this->commodities[i]->getStatus() == 1)
+    for (int i = 0; i < commodities.size(); i++) {
+        cout << commodities[i]->getMID() << "\t\t"
+             << left << setw(24) << commodities[i]->getName() << "\t\t";
+        printf("%.1lf\t\t", commodities[i]->getPrice());
+        cout << commodities[i]->getDate() << "\t\t" << commodities[i]->getOwnerID();
+        if (commodities[i]->getStatus() == 1)
             cout << "\t\t销售中\n";
-        else if (this->commodities[i]->getStatus() == 0)
+        else if (commodities[i]->getStatus() == 0)
             cout << "\t\t已售出\n";
-        else if (this->commodities[i]->getStatus() == -1)
+        else if (commodities[i]->getStatus() == -1)
             cout << "\t\t已下架\n";
     }
     cout << "***********************************************************************************************************************" << endl;
@@ -890,21 +605,21 @@ void Manager::showCommodities() {
 
 void Manager::showMenu(){
     system("clear");
-    cout << "=================================================" << endl;
-    cout << "1.用户登录 2.用户注册 3.管理员登录 4.退出程序" << endl;
-    cout << "=================================================" << endl << endl;
+    cout << "======================================================================================" << endl;
+    cout << "1.用户登录 2.用户注册 3.管理员登录 4.账户解冻 5.忘记登录密码 6.忘记支付密码 7.退出程序" << endl;
+    cout << "======================================================================================" << endl;
 }
 
 void Manager::showOrders() {
     cout << "*************************************************************************************" << endl;
     cout << "订单ID:\t\t商品ID：\t交易时间：\t交易金额：\t卖家ID：\t买家ID：\n";
-    for (int i = 0; i < this->orders.size(); i++) {
-        cout << this->orders[i]->getTID() << "\t\t"
-             << this->orders[i]->getCommodity()->getMID() << "\t\t"
-             << this->orders[i]->getDate() << "\t";
-        printf("%.1lf\t\t", this->orders[i]->getCommodity()->getPrice());
-        cout << this->orders[i]->getVendorID() << "\t\t"
-             << this->orders[i]->getBuyerID() << endl;
+    for (int i = 0; i < orders.size(); i++) {
+        cout << orders[i]->getTID() << "\t\t"
+             << orders[i]->getCommodity()->getMID() << "\t\t"
+             << orders[i]->getDate() << "\t";
+        printf("%.1lf\t\t", orders[i]->getCommodity()->getPrice());
+        cout << orders[i]->getVendorID() << "\t\t"
+             << orders[i]->getBuyerID() << endl;
     }
     cout << "*************************************************************************************" << endl;
 }
@@ -922,21 +637,44 @@ void Manager::showUsers()
     }
 }
 
-void Manager::showVendorOrders(User* user) {
-    cout << "*************************************************************************************" << endl;
-    cout << "订单ID:\t\t商品ID：\t交易时间：\t交易金额：\t卖家ID：\t买家ID：\n";
-    for (int i = 0; i < user->getOrders().size(); i++) {
-        if (user->getOrders()[i]->getStatus() == 1) {
-            cout << user->getOrders()[i]->getTID() << "\t\t"
-                 << user->getOrders()[i]->getCommodity()->getMID() << "\t\t"
-                 << user->getOrders()[i]->getDate() << "\t";
-            printf("%.1lf\t\t", user->getOrders()[i]->getCommodity()->getPrice());
-            cout << user->getOrders()[i]->getVendorID() << "\t\t"
-                 << user->getOrders()[i]->getBuyerID() << endl;
+void Manager::unfreeze() {
+    cout<<"请输入您要解冻的账号（UID或者用户名均可）：";
+    string s;
+    cin>>s;
+    getchar();
+    User *user = nullptr;
+    for(User* u : users)
+        if(u->getID() == s || u->getUsername() == s) {
+            user = u;
+            break;
+        }
+    if(!user) {
+        cout<<"!!!帐号不存在!!!\n";
+        PAUSE
+        return;
+    }
+    if(!user->isFrozen) {
+        cout<<"*******您的账号并没有被冻结*******"<<endl;
+        PAUSE
+        return;
+    }
+    else {
+        cout << "请输入您预留的联系方式：";
+        string contact;
+        cin>>contact;
+        getchar();
+        if(contact == user->getContact()) {
+            cout<<"*******解冻成功*******\n";
+            user->isFrozen = false;
+            PAUSE
+            return;
+        }
+        else {
+            cout<<"联系方式有误，解冻失败\n";
+            PAUSE
+            return;
         }
     }
-    cout << "*************************************************************************************" << endl;
-    PAUSE
 }
 
 void Manager::userLogin() {
@@ -947,23 +685,29 @@ void Manager::userLogin() {
     cout << "请输入密码: ";
     cin >> password;
     getchar();
-    User *user = NULL;
+    User *user = nullptr;
     bool flag = false;
-    for (int i = 0; i < this->users.size(); i++)
+    for (int i = 0; i < users.size(); i++)
         if (users[i]->login(username, password)) {
             user = users[i];
             flag = true;
             break;
         }
-    if(flag)
-        cout << "********** 登陆成功 **********" << endl;
-    else {
+    if(!flag) {
         cout << "用户名或密码错误，请重新选择" << endl;
         PAUSE
         return;
     }
+    if(user->isFrozen) {
+        cout << "对不起，您的账户已经被冻结..." << endl;
+        PAUSE
+        return;
+    }
+    cout << "********** 登陆成功 **********" << endl;
     PAUSE
     while (1) {
+        if(user->isFrozen)
+            return;
         user->showMenu();
         int choice;
         cin >> choice;
@@ -992,12 +736,18 @@ void Manager::userLogin() {
 }
 
 void Manager::userRegister() {
+    cout<<"*******您可以输入-1来取消注册*******\n";
     string username, password, contact, address, payPass;
     int sex;
     while (1) {
         cout << "请输入用户名（不超过10位的字母或汉字）：";
         cin >> username;
         getchar();
+        if(username == "-1") {
+            cout<<"*******注册取消*******\n";
+            PAUSE
+            return;
+        }
         if (checkRegisterUsername(username))
             break;
     }
@@ -1005,6 +755,11 @@ void Manager::userRegister() {
         cout << "请输入密码（不超过20个字符，只能为小写字母和数字）：";
         cin >> password;
         getchar();
+        if(password == "-1") {
+            cout<<"*******注册取消*******\n";
+            PAUSE
+            return;
+        }
         if (checkRegisterPassword(password)) {
             string check;
             cout << "请再次输入密码：";
@@ -1021,6 +776,11 @@ void Manager::userRegister() {
         cout << "请输入性别（1.男 2.女 0.不愿透露）";
         cin >> sex;
         getchar();
+        if(sex == -1) {
+            cout<<"*******注册取消*******\n";
+            PAUSE
+            return;
+        }
         if (sex == 1 || sex == 2 || sex == 0)
             break;
         else
@@ -1030,33 +790,54 @@ void Manager::userRegister() {
         cout << "请输入联系方式：";
         cin >> contact;
         getchar();
+        if(contact == "-1") {
+            cout<<"*******注册取消*******\n";
+            PAUSE
+            return;
+        }
         if (this->checkRegisterContact(contact))
             break;
     }
     cout << "请输入地址：";
     cin >> address;
     getchar();
+    if(address == "-1") {
+        cout<<"*******注册取消*******\n";
+        PAUSE
+        return;
+    }
     while (1) {
         cout << "请输入支付密码：";
         cin >> payPass;
         getchar();
+        if(payPass == "-1") {
+            cout<<"*******注册取消*******\n";
+            PAUSE
+            return;
+        }
         string check;
         cout << "请再次输入支付密码：";
         cin >> check;
         getchar();
+        if(check == "-1") {
+            cout<<"*******注册取消*******\n";
+            PAUSE
+            return;
+        }
         if (check == payPass)
             break;
         else
             cout << "两次密码不同，请重新输入\n";
     }
-    User* user = new User(this->getUID(), username, password, sex, contact, address, 0, payPass);
-    this->users.push_back(user);
-    cout << "**********************添加成功**********************\n";
+    User* user = new User(this->getUID(), username, password, sex, contact, address, 0, payPass, false);
+    users.push_back(user);
+    cout << "**********************注册成功**********************\n";
     PAUSE
 }
 
 void Manager::vendorAction(User *user) {
     while (1) {
+        Commodity* c = nullptr;
         user->showVendorMenu();
         cout << "输入操作序号：";
         int choice;
@@ -1066,20 +847,23 @@ void Manager::vendorAction(User *user) {
         switch (choice)
         {
             case 1:
-                this->commodities.push_back(user->putUpCommodity(this->getMID()));
+                c = user->putUpCommodity(getMID());
+                if(!c)
+                    break;
+                commodities.push_back(c);
                 break;
             case 2:
                 user->showPutUp();
                 PAUSE
                 break;
             case 3:
-                this->modifyCommodity(user);
+                user->modifyCommodity();
                 break;
             case 4:
                 this->putDown(user);
                 break;
             case 5:
-                this->showVendorOrders(user);
+                user->showVendorOrders();
                 break;
             case 6:
                 return;
@@ -1094,42 +878,45 @@ void Manager::vendorAction(User *user) {
 void Manager::writeData() {
     ofstream ofs;
     ofs.open("User.txt", ios::out);
-    for (int i = 0; i < this->users.size(); i++) {
-        ofs << this->users[i]->getID()
-            << " " << this->users[i]->getUsername()
-            << " " << this->users[i]->getPassword()
-            << " " << this->users[i]->getSex()
-            << " " << this->users[i]->getContact()
-            << " " << this->users[i]->getAddress()
-            << " " << this->users[i]->getBalance()
-            << " " << this->users[i]->getPayPass() << endl;
+    for (auto & user : users) {
+        ofs << user->getID()
+            << " " << user->getUsername()
+            << " " << user->getPassword()
+            << " " << user->getSex()
+            << " " << user->getContact()
+            << " " << user->getAddress()
+            << " " << user->getBalance()
+            << " " << user->getPayPass()
+            << " " << user->isFrozen << endl;
     }
     ofs.close();
     ofs.open("Admins.txt", ios::out);
-    for (int i = 0; i < this->admins.size(); i++) {
-        ofs << this->admins[i]->getName() << " "
-            << this->admins[i]->getPassword() << endl;
+    for (auto & admin : admins) {
+        ofs << admin->getName() << " "
+            << admin->getPassword() << endl;
     }
     ofs.close();
     ofs.open("Commodities.txt", ios::out);
-    for (int i = 0; i < this->commodities.size(); i++) {
-        ofs << this->commodities[i]->getMID() << " "
-            << this->commodities[i]->getName() << " "
-            << this->commodities[i]->getIntroduction() << " "
-            << this->commodities[i]->getPrice() << " "
-            << this->commodities[i]->getOwnerID() << " "
-            << this->commodities[i]->getDate() << " "
-            << this->commodities[i]->getStatus() << endl;
+    for (auto & commodity : commodities) {
+        ofs << commodity->getMID() << " "
+            << commodity->getName() << " "
+            << commodity->getIntroduction() << " "
+            << commodity->getPrice() << " "
+            << commodity->getOwnerID() << " "
+            << commodity->getDate() << " "
+            << commodity->getStatus() << endl;
     }
     ofs.close();
     ofs.open("Orders.txt", ios::out);
-    for (int i = 0; i < this->orders.size(); i++) {
-        ofs << this->orders[i]->getTID() << " "
-            << this->orders[i]->getCommodity()->getMID() << " "
-            << this->orders[i]->getCommodity()->getPrice() << " "
-            << this->orders[i]->getDate() << " "
-            << this->orders[i]->getVendorID() << " "
-            << this->orders[i]->getBuyerID() << endl;
+    for (auto & order : orders) {
+        ofs << order->getTID() << " "
+            << order->getCommodity()->getMID() << " "
+            << order->getCommodity()->getPrice() << " "
+            << order->getDate() << " "
+            << order->getVendorID() << " "
+            << order->getBuyerID() << endl;
     }
     ofs.close();
 }
+
+

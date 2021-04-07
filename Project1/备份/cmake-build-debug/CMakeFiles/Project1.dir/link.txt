@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/Project1.dir/main.cpp.o CMakeFiles/Project1.dir/Manager.cpp.o CMakeFiles/Project1.dir/User.cpp.o CMakeFiles/Project1.dir/Commodity.cpp.o CMakeFiles/Project1.dir/Order.cpp.o CMakeFiles/Project1.dir/Admin.cpp.o  -o Project1 

@@ -27,6 +27,13 @@ int main() {
                 manager.adminLogin();
                 break;
             case 4:
+                manager.unfreeze();
+                break;
+            case 5:
+                manager.findPass();
+            case 6:
+                manager.findPayPass();
+            case 7:
                 manager.exitSystem();
                 break;
             default:

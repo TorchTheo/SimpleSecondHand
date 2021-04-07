@@ -31,8 +31,6 @@ iomanip
 -
 unistd.h
 -
-termios.h
--
 
 /home/torchtheo/桌面/ClionProject/CodeLab/Project1/Manager.h
 vector
@@ -58,20 +56,6 @@ Commodity.h
 string
 -
 cstdio
--
-
-/home/torchtheo/桌面/ClionProject/CodeLab/Project1/User.cpp
-User.h
-/home/torchtheo/桌面/ClionProject/CodeLab/Project1/User.h
-iostream
--
-fstream
--
-iomanip
--
-unistd.h
--
-termios.h
 -
 
 /home/torchtheo/桌面/ClionProject/CodeLab/Project1/User.h

@@ -24,37 +24,33 @@ public:
     bool checkUsername(string username);
     void delUser();
     void exitSystem();
-    Commodity* getCommodity(string MID);
-    string getMID();
-    string getTID();
-    string getUID();
-    User* getVendor(string UID);
+    void findPass();
+    void findPayPass();
+    static Commodity* getCommodity(string MID);
+    static string getMID();
+    static string getTID();
+    static string getUID();
+    static User* getVendor(string UID);
     void init();
     void IM(User* user);//信息管理
-    void modifyCommodity(User* user);
-    void modifyInfo(User* user);
-    void purchase(User* user);//user购买商品
     void putDown(User* user);
     void putDown();
     void query();
-    int queryInfo(string MID);//中间程序，通过MID查询商品
-    void recharge(User* user);
+    static int queryInfo(string MID);//中间程序，通过MID查询商品
     void searchCommodity();//搜索商品
-    void showBuyerOrders(User* user);
-    void showCommodities();//展示所有商品
+    static void showCommodities();//展示所有商品
     void showMenu();//展示菜单
     void showOrders();
     void showUsers();
-    void showVendorOrders(User* user);
+    void unfreeze();
     void userLogin();//用户登录
     void userRegister();
     void vendorAction(User* user);//卖家操作
     void writeData();
-private:
-    vector<User*> users;
-    vector<Admin*> admins;
-    vector<Commodity*> commodities;
-    vector<Order*> orders;
+    static vector<User*> users;
+    static vector<Admin*> admins;
+    static vector<Commodity*> commodities;
+    static vector<Order*> orders;
 };
 
 
