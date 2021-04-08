@@ -410,7 +410,9 @@ void User::modifyInfo() {
             }
             break;
         default:
-            cout << "请输入正确的操作序号" << endl;
+            cin.clear();
+            cin.sync();
+            cout << "\n请输入正确的操作序号" << endl;
             PAUSE
             break;
     }
@@ -490,6 +492,12 @@ void User::purchase() {
         cout << "取消成功" << endl;
         PAUSE
     }
+    else {
+        cin.clear();
+        cin.sync();
+        cout<<"输入有误\n";
+        PAUSE
+    }
 }
 
 void User::pushOrder(Order* order) {
@@ -545,6 +553,13 @@ Commodity* User::putUpCommodity(string MID) {
     }
     else if (choice == 'n')
         cout << "取消成功" << endl;
+    else {
+        cin.clear();
+        cin.sync();
+        cout<<"输入有误\n";
+        PAUSE
+        return nullptr;
+    }
     PAUSE
     return c;
 }

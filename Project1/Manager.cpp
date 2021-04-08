@@ -68,7 +68,9 @@ void Manager::adminLogin() {
             case 7:
                 return;
             default:
-                cout << "请输入正确的操作序号" << endl;
+                cin.clear();
+                cin.sync();
+                cout << "\n请输入正确的操作序号" << endl;
                 PAUSE
                 break;
         }
@@ -105,7 +107,9 @@ void Manager::buyerAction(User *user) {
             case 6:
                 return;
             default:
-                cout << "请输入正确的操作序号" << endl;
+                cin.clear();
+                cin.sync();
+                cout << "\n请输入正确的操作序号" << endl;
                 PAUSE
                 break;
         }
@@ -202,9 +206,14 @@ void Manager::delUser() {
         users.erase(users.begin() + index);
         cout << "*********删除成功*********" << endl;
     }
-    else
+    else if(choice == 'n')
         cout << "取消删除\n";
-    return;
+    else {
+        cin.clear();
+        cin.sync();
+        cout<<"输入有误\n";
+        PAUSE
+    }
 }
 
 void Manager::exitSystem() {
@@ -413,7 +422,9 @@ void Manager::IM(User* user) {
                 PAUSE
                 break;
             default:
-                cout << "请输入正确的操作序号" << endl;
+                cin.clear();
+                cin.sync();
+                cout << "\n请输入正确的操作序号" << endl;
                 PAUSE
                 break;
         }
@@ -460,10 +471,15 @@ void Manager::putDown(User* user) {
         c1->setStatus(-1);
         cout << "下架成功\n";
     }
-    else
+    else if(choice == 'n')
         cout << "取消下架\n";
+    else {
+        cin.clear();
+        cin.sync();
+        cout<<"输入有误\n";
+        PAUSE
+    }
     PAUSE
-    return;
 }
 
 void Manager::putDown() {
@@ -498,9 +514,15 @@ void Manager::putDown() {
         this->writeData();
         this->init();
     }
-    else
+    else if(choice == 'n')
         cout << "取消下架\n";
-    return;
+    else {
+        cin.clear();
+        cin.sync();
+        cout<<"输入有误\n";
+        PAUSE
+    }
+    PAUSE
 }
 
 void Manager::query() {
@@ -726,7 +748,9 @@ void Manager::userLogin() {
                 this->IM(user);
                 break;
             default:
-                cout << "请输入正确的操作序号" << endl;
+                cin.clear();
+                cin.sync();
+                cout << "\n请输入正确的操作序号" << endl;
                 PAUSE
                 break;
         }
@@ -868,7 +892,9 @@ void Manager::vendorAction(User *user) {
             case 6:
                 return;
             default:
-                cout << "请输入正确的操作序号" << endl;
+                cin.clear();
+                cin.sync();
+                cout << "\n请输入正确的操作序号" << endl;
                 PAUSE
                 break;
         }

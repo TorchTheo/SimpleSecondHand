@@ -37,7 +37,9 @@ int main() {
                 manager.exitSystem();
                 break;
             default:
-                cout << "请输入正确的操作序号" << endl;
+                cin.clear();
+                cin.sync();
+                cout << "\n请输入正确的操作序号" << endl;
                 PAUSE
                 break;
         }
