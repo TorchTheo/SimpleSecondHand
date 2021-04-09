@@ -12,7 +12,7 @@ int main() {
     int choice;
     while (1) {
         manager.init();
-        manager.showMenu();
+        Manager::showMenu();
         cout << "输入操作:";
         cin >> choice;
         getchar();
@@ -43,7 +43,7 @@ int main() {
                 PAUSE
                 break;
         }
-        manager.writeData();
+        Manager::writeData();
     }
     return 0;
 }

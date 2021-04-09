@@ -22,7 +22,6 @@ public:
     bool checkRegisterPassword(string password);
     bool checkRegisterUsername(string username);
     bool checkUsername(string username);
-    void delUser();
     void exitSystem();
     void findPass();
     void findPayPass();
@@ -31,22 +30,21 @@ public:
     static string getTID();
     static string getUID();
     static User* getVendor(string UID);
-    void init();
+    static void init();
     void IM(User* user);//信息管理
     void putDown(User* user);
-    void putDown();
     void query();
     static int queryInfo(string MID);//中间程序，通过MID查询商品
     void searchCommodity();//搜索商品
     static void showCommodities();//展示所有商品
-    void showMenu();//展示菜单
-    void showOrders();
-    void showUsers();
+    static void showMenu();//展示菜单
+    static void showOrders();
+    static void showUsers();
     void unfreeze();
     void userLogin();//用户登录
     void userRegister();
     void vendorAction(User* user);//卖家操作
-    void writeData();
+    static void writeData();
     static vector<User*> users;
     static vector<Admin*> admins;
     static vector<Commodity*> commodities;

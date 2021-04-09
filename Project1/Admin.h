@@ -16,6 +16,8 @@ public:
     string getPassword();
     bool login(string name, string password);
     void showMenu();
+    void delUser();
+    void putDown();
 private:
     string name, password;
 };

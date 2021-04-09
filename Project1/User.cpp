@@ -234,6 +234,7 @@ void User::modifyCommodity() {
             c1->setName(s);
             cout << "修改成功！\n";
             cout << "*********************************************************************************************" << endl;
+            Manager::writeData();
         }
         else {
             cout << "取消修改\n";
@@ -485,7 +486,7 @@ void User::purchase() {
             this->pushOrder(o1);
             Manager::orders.push_back(o2);
             PAUSE
-
+            Manager::writeData();
         }
     }
     else if (choice == 'n') {
@@ -550,6 +551,7 @@ Commodity* User::putUpCommodity(string MID) {
     if (choice == 'y') {
         cout << "商品发布成功!" << endl;
         this->commodities.push_back(c);
+        Manager::writeData();
     }
     else if (choice == 'n')
         cout << "取消成功" << endl;

@@ -43,26 +43,26 @@ void Manager::adminLogin() {
         switch (choice)
         {
             case 1:
-                this->showCommodities();
+                showCommodities();
                 PAUSE
                 break;
             case 2:
                 this->query();
                 break;
             case 3:
-                this->showOrders();
+                showOrders();
                 PAUSE
                 break;
             case 4:
-                this->showUsers();
+                showUsers();
                 PAUSE
                 break;
             case 5:
-                this->delUser();
+                admin->delUser();
                 PAUSE
                 break;
             case 6:
-                this->putDown();
+                admin->putDown();
                 PAUSE
                 break;
             case 7:
@@ -87,7 +87,7 @@ void Manager::buyerAction(User *user) {
         switch (choice)
         {
             case 1:
-                this->showCommodities();
+                showCommodities();
                 PAUSE
                 break;
             case 2:
@@ -170,50 +170,6 @@ bool Manager::checkUsername(string username) {
             break;
         }
     return flag;
-}
-
-void Manager::delUser() {
-    this->showUsers();
-    cout << "请输入您要删除的用户UID：";
-    string UID;
-    bool flag = false;
-    int index = 0;
-    cin >> UID;
-    getchar();
-    for (int i = 0; i < users.size(); i++)
-        if (users[i]->getID() == UID) {
-            index = i;
-            flag = true;
-            break;
-        }
-    if (!flag) {
-        cout << "!!!您所输入的用户ID不存在!!!\n";
-        return;
-    }
-    char choice;
-    cout << "您确定要删除此用户吗？这个用户的商品会全部下架(y/n)\n";
-    cin >> choice;
-    getchar();
-    if (choice == 'y') {
-        User* user = users[index];
-        vector<Commodity*> com = user->getCommodities();
-        for (int i = 0; i < com.size(); i++)
-            if (com[i]->getBelonging() == 0) {
-                Commodity* c = this->getCommodity(com[i]->getMID());
-                c->setStatus(-1);
-                com[i]->setStatus(-1);
-            }
-        users.erase(users.begin() + index);
-        cout << "*********删除成功*********" << endl;
-    }
-    else if(choice == 'n')
-        cout << "取消删除\n";
-    else {
-        cin.clear();
-        cin.sync();
-        cout<<"输入有误\n";
-        PAUSE
-    }
 }
 
 void Manager::exitSystem() {
@@ -470,49 +426,7 @@ void Manager::putDown(User* user) {
         c->setStatus(-1);
         c1->setStatus(-1);
         cout << "下架成功\n";
-    }
-    else if(choice == 'n')
-        cout << "取消下架\n";
-    else {
-        cin.clear();
-        cin.sync();
-        cout<<"输入有误\n";
-        PAUSE
-    }
-    PAUSE
-}
-
-void Manager::putDown() {
-    this->showCommodities();
-    cout << "请输入下架商品的MID\n";
-    string MID;
-    cin >> MID;
-    getchar();
-    Commodity* c = this->getCommodity(MID);
-    if (!c) {
-        cout << "您输入的商品ID不存在\n";
-        return;
-    }
-    if (c->getStatus() == -1) {
-        cout << "对不起哦，这件商品已经下架了\n";
-        return;
-    }
-    cout << "请确认商品信息\n";
-    cout << "**************************************************\n";
-    cout << "商品ID：" << c->getMID() << endl;
-    cout << "商品名称：" << c->getName() << endl;
-    printf("商品价格：%.1lf\n", c->getPrice());
-    cout << "商品描述：" << c->getIntroduction() << endl;
-    cout << "**************************************************\n";
-    cout << "是否下架该商品？（y/n）";
-    char choice;
-    cin >> choice;
-    getchar();
-    if (choice == 'y') {
-        c->setStatus(-1);
-        cout << "下架成功\n";
-        this->writeData();
-        this->init();
+        writeData();
     }
     else if(choice == 'n')
         cout << "取消下架\n";
